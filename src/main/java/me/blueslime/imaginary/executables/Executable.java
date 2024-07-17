@@ -262,6 +262,7 @@ public class Executable {
     }
 
     public void shutdown() {
+        Implements.fetch(MeteorLogger.class).info("Unloading executable: " + identifier);
         // Remove menus from this executable file.
         Implements.fetch(Menus.class).getMenuStorageSettings().entrySet().removeIf(entry -> entry.getKey().startsWith(identifier + ":"));
         // Remove inventories from this executable file
@@ -294,5 +295,6 @@ public class Executable {
         // Now we don't need to remove instances from the class loader because is dynamic, but we should remove this class loader from plugin's class loader
         loader.clear();
         loader = null;
+        Implements.fetch(MeteorLogger.class).info("Executable unloaded: " + identifier);
     }
 }
