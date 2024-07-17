@@ -1,5 +1,13 @@
 # This plugin has been designed for mini plugins with mini features.
 
+# You can create menus using Menus Path
+# You can create inventories using Inventories path
+# ¿You want to know in events when this code is loaded or not
+# Use these events:
+#   - me.blueslime.imaginary.api.events.ExecutableInitializeEvent
+#   - me.blueslime.imaginary.api.events.ExecutableShutdownEvent
+# This is a beta, please report issues.
+
 # Events are for listeners.
 events:
   '1':
