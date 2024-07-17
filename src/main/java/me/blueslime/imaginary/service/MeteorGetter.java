@@ -19,6 +19,11 @@ public class MeteorGetter implements Module {
     }
 
     @Override
+    public void shutdown() {
+
+    }
+
+    @Override
     public boolean isPersistent() {
         return true;
     }

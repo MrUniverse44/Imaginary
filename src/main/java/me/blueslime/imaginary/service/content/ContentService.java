@@ -67,7 +67,7 @@ public class ContentService implements RegisteredModule {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void shutdown() {
-        File outputMainDir = new File(Implements.fetch(File.class, "folder"), "generated");
+        File outputMainDir = new File(Implements.fetch(Imaginary.class).getDataFolder(), "generated");
         if (outputMainDir.exists()) {
             outputMainDir.delete();
         }

@@ -19,6 +19,9 @@ import org.bukkit.event.Listener;
 
 import javax.tools.*;
 import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +48,6 @@ public class Executable {
 
     public void initialize() {
         MeteorLogger logs = Implements.fetch(MeteorLogger.class);
-        long time = System.currentTimeMillis();
         // Initialize FileConfiguration for this file.
         FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
         // Imaginary plugin instance
@@ -110,6 +112,7 @@ public class Executable {
             outputDir.mkdirs();
         }
 
+        long time = System.currentTimeMillis();
         for (String key : eventSection.getKeys(false)) {
             String path = "events." + key + ".";
             List<String> imports = configuration.getStringList(path + "imports");
@@ -142,8 +145,17 @@ public class Executable {
             // We get the final code here.
             String classCode = codeBuilder.toString();
 
-            // We show the result in console
-            logs.info("Generated class result from event of executable: " + identifier, "class name: " + className + "result:\n" + classCode);
+            FileConfiguration settings = Implements.fetch(FileConfiguration.class, "settings.yml");
+
+            boolean result = settings == null || settings.getBoolean("debug-mode", false);
+
+            if (result) {
+                // We show the result in console
+                logs.info(
+                        "Generated class result from event of executable: " + identifier,
+                        "class name: " + className + ", result:\n\n" + classCode
+                );
+            }
 
             PluginConsumer.process(
                 () -> {
@@ -162,24 +174,48 @@ public class Executable {
 
     private List<File> findAllLoadedJars() {
         List<File> loadedJars = new ArrayList<>();
-        String classpath = System.getProperty("java.class.path");
-        String[] classpathEntries = classpath.split(File.pathSeparator);
+        Imaginary plugin = Implements.fetch(Imaginary.class);
 
-        for (String entry : classpathEntries) {
-            File file = new File(entry);
-            if (file.isFile() && file.getName().toLowerCase().endsWith(".jar")) {
-                loadedJars.add(file);
+        ClassLoader cl = plugin.getClass().getClassLoader();
+
+        while (cl != null) {
+            if (cl instanceof URLClassLoader) {
+                URL[] urls = ((URLClassLoader) cl).getURLs();
+                for (URL url : urls) {
+                    try {
+                        File file = new File(url.toURI());
+                        if (file.exists() && file.getName().toLowerCase().endsWith(".jar")) {
+                            loadedJars.add(file);
+                        }
+                    } catch (URISyntaxException ignored) {}
+                }
             }
+            cl = cl.getParent();
         }
 
         // Adds the server jar to the classpath
         // This is the important because the compiler should compile the class
         // Using the jar to prevent issues.
-        Imaginary plugin = Implements.fetch(Imaginary.class);
+
         String serverJarPath = plugin.getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
         File serverJar = new File(serverJarPath);
+
         if (serverJar.exists() && !loadedJars.contains(serverJar)) {
             loadedJars.add(serverJar);
+        }
+
+        File serverJarURI = PluginConsumer.ofUnchecked(
+            () -> new File(plugin.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getPath()),
+            e -> {
+                plugin.getLogs().error(e, "Can't add the server jar URI");
+            },
+            () -> null
+        );
+
+        if (serverJarURI != null) {
+            if (!loadedJars.contains(serverJarURI)) {
+                loadedJars.add(serverJarURI);
+            }
         }
 
         return loadedJars;
@@ -198,11 +234,16 @@ public class Executable {
 
                 List<String> optionList = new ArrayList<>();
                 StringBuilder classpathBuilder = new StringBuilder();
+
                 for (File jar : loadedJars) {
-                    classpathBuilder.append(jar.getAbsolutePath()).append(File.pathSeparator);
+                    if (jar.exists() && jar.isFile()) {
+                        classpathBuilder.append(jar.getAbsolutePath()).append(File.pathSeparator);
+                    }
                 }
+                classpathBuilder.append(System.getProperty("java.class.path"));
+
                 optionList.add("-classpath");
-                optionList.add(classpathBuilder.toString() + System.getProperty("java.class.path"));
+                optionList.add(classpathBuilder.toString());
 
                 // With this if a developer add an optional plugin support, it will not pause the compiler
                 // If that plugin is not installed.
@@ -215,7 +256,12 @@ public class Executable {
                 JavaCompiler.CompilationTask task = compiler.getTask(printWriter, fileManager, diagnostics, optionList, null, compilationUnits);
 
                 if (task.call()) {
-                    Implements.fetch(MeteorLogger.class).info(": D");
+                    Implements.fetch(MeteorLogger.class).info("Loaded an event class for executor: " + identifier);
+                } else {
+                    MeteorLogger logs = Implements.fetch(MeteorLogger.class);
+                    for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
+                        logs.debug("Error on line " + diagnostic.getLineNumber() + " in " + diagnostic.getSource().toUri(), diagnostic.getMessage(Locale.ENGLISH));
+                    }
                 }
 
                 printWriter.flush();
