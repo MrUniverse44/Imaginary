@@ -1,7 +1,14 @@
 name: Imaginary
 version: '${project.version}'
 main: me.blueslime.imaginary.Imaginary
+author: JustJustin
+authors:
+  - JustJustin
+  - imuniverse
 api-version: '1.13'
+load: POSTWORLD
+softdepend:
+  - PlaceholderAPI
 description: The best project for events without creating an entire plugin only for a single event catcher.
 commands:
   imaginary:
