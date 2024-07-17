@@ -28,6 +28,12 @@ public class ContentService implements RegisteredModule {
                 );
                 InputStream src = FileUtil.build("TestYaml.yml");
                 src = src == null ? Implements.fetch(Imaginary.class).getResource("TestYaml.yml") : src;
+                if (src == null) {
+                    src = Implements.fetch(Imaginary.class).getResource("/TestYaml.yml");
+                    if (src == null) {
+                        src = FileUtil.build("/TestYaml.yml");
+                    }
+                }
                 FileUtil.saveResource(target, src);
             }
             return;
