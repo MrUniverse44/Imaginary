@@ -10,7 +10,7 @@ import me.blueslime.bukkitmeteor.menus.Menus;
 import me.blueslime.imaginary.Imaginary;
 import me.blueslime.imaginary.api.events.ExecutableInitializeEvent;
 import me.blueslime.imaginary.api.events.ExecutableShutdownEvent;
-import me.blueslime.imaginary.executables.executor.ExecutorService;
+import me.blueslime.imaginary.executables.executor.ExecutorUtil;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -18,14 +18,16 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
 import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
@@ -34,8 +36,6 @@ public class Executable {
     private final PluginStorage<String, File> runningFileStorage = PluginStorage.initAsConcurrentHash();
     private final PluginStorage<String, Object> instanceStorage = PluginStorage.initAsConcurrentHash();
     private static final String PACKAGE_NAME = "me.blueslime.imaginary.generated";
-
-    private ExecutorService loader;
 
     private final String identifier;
     private final File file;
@@ -46,10 +46,6 @@ public class Executable {
         this.identifier = file.getName()
             .replace(".yml", "")
             .toLowerCase(Locale.ENGLISH);
-
-        this.loader = new ExecutorService(
-            Implements.fetch(Imaginary.class).getClass().getClassLoader()
-        );
     }
 
     public void initialize() {
@@ -112,9 +108,6 @@ public class Executable {
             return;
         }
 
-        // We need to get values from events
-        Map<String, Object> events = eventSection.getValues(false);
-
         // We save here the generated classes
         File outputMainDir = new File(plugin.getDataFolder(), "generated");
         File outputDir = new File(outputMainDir, identifier);
@@ -130,6 +123,9 @@ public class Executable {
             // Class name will be the same of this fileName
             String className = this.identifier + "_" + key;
             StringBuilder codeBuilder = new StringBuilder();
+
+            //PACKAGE_NAME + "." + className
+            codeBuilder.append("package " + PACKAGE_NAME + ";\n\n");
 
             // We should add the imports to this current class
             for (String importStatement : imports) {
@@ -160,7 +156,7 @@ public class Executable {
                     compileFile(javaFile);
                     File jarFile = packageToJar(outputDir, className);
 
-                    Class<?> loadedClass = loadClassFromJar(jarFile, PACKAGE_NAME + "." + className);
+                    Class<?> loadedClass = loadClassFromJar(jarFile, className);
                     registerEvent(loadedClass, className);
                 },
                 e -> logs.error(e, "Failed to load executable: " + className)
@@ -169,14 +165,74 @@ public class Executable {
         logs.info("Executable with identifier: " + identifier + ", was loaded in " + (System.currentTimeMillis() - time) + "ms");
     }
 
+    private File findBukkitJar() {
+        List<File> searchDirectories = Arrays.asList(
+            new File("versions"),
+            new File(".")
+        );
+
+        for (File dir : searchDirectories) {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    boolean isJar = file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar");
+                    if (isJar) {
+                        if (file.getName().contains("spigot") || file.getName().contains("bukkit") || file.getName().contains("paper")) {
+                            return file;
+                        }
+                        continue;
+                    }
+                    if (file.isDirectory()) {
+                        File[] insideFiles = file.listFiles((d, name) -> name.toLowerCase(Locale.ENGLISH).endsWith(".jar"));
+                        if (insideFiles != null) {
+                            for (File insideFile : insideFiles) {
+                                if (file.getName().contains("spigot") || file.getName().contains("bukkit") || file.getName().contains("paper")) {
+                                    return insideFile;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     private void compileFile(File javaFile) {
         PluginConsumer.process(
             () -> {
-                JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-                int result = compiler.run(null, null, null, javaFile.getPath());
+                File bukkitJar = findBukkitJar();
 
-                if (result != 0) {
-                    throw new IOException("Compilation failed for " + javaFile.getName());
+                JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+
+                StandardJavaFileManager fileManager;
+
+                if (bukkitJar != null) {
+                    fileManager = compiler.getStandardFileManager(null, null, null);
+                    Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(javaFile);
+
+                    List<String> optionList = new ArrayList<>();
+                    optionList.add("-classpath");
+                    optionList.add(bukkitJar.getPath() + File.pathSeparator + System.getProperty("java.class.path"));
+
+                    JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, optionList, null, compilationUnits);
+                    boolean result = task.call();
+
+                    if (!result) {
+                        Implements.fetch(MeteorLogger.class).info("Can't create the compiled file :(");
+                    }
+                    fileManager.close();
+                } else {
+                    fileManager = compiler.getStandardFileManager(null, null, null);
+
+                    JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, null, null, null);
+
+                    boolean result = task.call();
+
+                    if (!result) {
+                        Implements.fetch(MeteorLogger.class).info("Can't create the compiled file :(");
+                    }
+                    fileManager.close();
                 }
             },
             e -> {}
@@ -186,10 +242,11 @@ public class Executable {
     private Class<?> loadClassFromJar(File jarFile, String className) {
         return PluginConsumer.ofUnchecked(
             () -> {
-                ExecutorService service = Implements.fetch(ExecutorService.class);
-                service.addJar(jarFile);
-                runningFileStorage.set(className, jarFile);
-                return service.loadClass(className);
+                if (jarFile != null && jarFile.exists()) {
+                    runningFileStorage.set(className, jarFile);
+                    return ExecutorUtil.findClass(jarFile);
+                }
+                return null;
             },
             e -> Implements.fetch(MeteorLogger.class).error(e, "Failed to load class " + className),
             () -> null
@@ -244,6 +301,9 @@ public class Executable {
                 File jarFile = new File(outputDir, className + ".jar");
                 try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jarFile.toPath()))) {
                     File classFile = new File(outputDir, PACKAGE_NAME.replace('.', '/') + "/" + className + ".class");
+                    if (!classFile.exists()) {
+                        return null;
+                    }
                     JarEntry entry = new JarEntry(PACKAGE_NAME.replace('.', '/') + "/" + classFile.getName());
                     jos.putNextEntry(entry);
                     Files.copy(classFile.toPath(), jos);
@@ -292,9 +352,6 @@ public class Executable {
         instanceStorage.clear();
         runningFileStorage.clear();
 
-        // Now we don't need to remove instances from the class loader because is dynamic, but we should remove this class loader from plugin's class loader
-        loader.clear();
-        loader = null;
         Implements.fetch(MeteorLogger.class).info("Executable unloaded: " + identifier);
     }
 }

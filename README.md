@@ -35,3 +35,16 @@ You can find more data about how this works in the future here.
 
 * Condition System
 * Commands
+
+# Credits
+
+> This project contains code from PlaceholdersAPI in the class: 
+```
+me.blueslime.imaginary.executables.executor.ExecutorUtil
+```
+> You can find the original code here: https://github.com/PlaceholderAPI/PlaceholderAPI/blob/master/src/main/java/me/clip/placeholderapi/util/FileUtil.java<br><br>
+> Thanks to PlaceholdersAPI Team, We are using GNU General Public License.
+
+Este proyecto incluye código de [Nombre del Proyecto Original] por [Nombre del Autor], licenciado bajo la Licencia Pública General de GNU (GPL).
+
+Puede encontrar el código original en [URL del Proyecto Original].
