@@ -1,0 +1,4 @@
+name: Imaginery
+version: '${project.version}'
+main: me.blueslime.imaginery.Imaginery
+api-version: '1.16'
