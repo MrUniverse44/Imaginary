@@ -264,10 +264,15 @@ public class Executable {
     public void shutdown() {
         Implements.fetch(MeteorLogger.class).info("Unloading executable: " + identifier);
         // Remove menus from this executable file.
-        Implements.fetch(Menus.class).getMenuStorageSettings().entrySet().removeIf(entry -> entry.getKey().startsWith(identifier + ":"));
+        Menus menus = Implements.fetch(Menus.class);
+        if (menus != null) {
+            menus.getMenuStorageSettings().entrySet().removeIf(entry -> entry.getKey().startsWith(identifier + ":"));
+        }
         // Remove inventories from this executable file
-        Implements.fetch(Inventories.class).getInventoryStorage().entrySet().removeIf(entry -> entry.getKey().startsWith(identifier + ":"));
-
+        Inventories inventories = Implements.fetch(Inventories.class);
+        if (inventories != null) {
+            inventories.getInventoryStorage().entrySet().removeIf(entry -> entry.getKey().startsWith(identifier + ":"));
+        }
         // Remove all files from this project
         runningFileStorage.entrySet().forEach(
             entry -> entry.getValue().delete()

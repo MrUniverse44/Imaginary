@@ -18,9 +18,9 @@ public class Command extends AdvancedCommand<Imaginary> {
             return;
         }
         if (arguments.length == 0 || arguments[0].equalsIgnoreCase("help")) {
-            sender.send("&7/imaginary help");
-            sender.send("&7/imaginary reload");
-            sender.send("&7/imaginary version");
+            sender.send("&a/imaginary help");
+            sender.send("&a/imaginary reload");
+            sender.send("&a/imaginary version");
             return;
         }
         String argument = arguments[0].toLowerCase(Locale.ENGLISH);

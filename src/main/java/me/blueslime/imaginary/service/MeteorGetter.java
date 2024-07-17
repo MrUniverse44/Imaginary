@@ -3,9 +3,7 @@ package me.blueslime.imaginary.service;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
-import me.blueslime.bukkitmeteor.inventory.Inventories;
 import me.blueslime.bukkitmeteor.logs.MeteorLogger;
-import me.blueslime.bukkitmeteor.menus.Menus;
 import me.blueslime.bukkitmeteor.utils.FileUtil;
 import me.blueslime.imaginary.Imaginary;
 
@@ -62,15 +60,5 @@ public class MeteorGetter implements Module {
             }
         }
         return file;
-    }
-
-    @Register
-    public Menus provideMenus() {
-        return new Menus(plugin);
-    }
-
-    @Register
-    public Inventories provideInventories() {
-        return new Inventories(plugin);
     }
 }
