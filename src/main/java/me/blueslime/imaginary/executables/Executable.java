@@ -176,6 +176,16 @@ public class Executable {
             }
         }
 
+        // Adds the server jar to the classpath
+        // This is the important because the compiler should compile the class
+        // Using the jar to prevent issues.
+        Imaginary plugin = Implements.fetch(Imaginary.class);
+        String serverJarPath = plugin.getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+        File serverJar = new File(serverJarPath);
+        if (serverJar.exists() && !loadedJars.contains(serverJar)) {
+            loadedJars.add(serverJar);
+        }
+
         return loadedJars;
     }
 
@@ -184,7 +194,7 @@ public class Executable {
             () -> {
                 List<File> loadedJars = findAllLoadedJars();
 
-                // Setup the Java compiler with the entire classpath with all loaded jars
+                // Set up the Java compiler with the entire classpath with all loaded jars
                 JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
                 StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
                 Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(javaFile);
@@ -196,6 +206,10 @@ public class Executable {
                 }
                 optionList.add("-classpath");
                 optionList.add(classpathBuilder.toString() + System.getProperty("java.class.path"));
+
+                // With this if a developer add an optional plugin support, it will not pause the compiler
+                // If that plugin is not installed.
+                optionList.add("-Xdiags:verbose");
 
                 JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, optionList, null, compilationUnits);
                 boolean result = task.call();
