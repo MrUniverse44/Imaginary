@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.jar.JarEntry;
@@ -165,75 +164,46 @@ public class Executable {
         logs.info("Executable with identifier: " + identifier + ", was loaded in " + (System.currentTimeMillis() - time) + "ms");
     }
 
-    private File findBukkitJar() {
-        List<File> searchDirectories = Arrays.asList(
-            new File("versions"),
-            new File(".")
-        );
+    private List<File> findAllLoadedJars() {
+        List<File> loadedJars = new ArrayList<>();
+        String classpath = System.getProperty("java.class.path");
+        String[] classpathEntries = classpath.split(File.pathSeparator);
 
-        for (File dir : searchDirectories) {
-            File[] files = dir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    boolean isJar = file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar");
-                    if (isJar) {
-                        if (file.getName().contains("spigot") || file.getName().contains("bukkit") || file.getName().contains("paper")) {
-                            return file;
-                        }
-                        continue;
-                    }
-                    if (file.isDirectory()) {
-                        File[] insideFiles = file.listFiles((d, name) -> name.toLowerCase(Locale.ENGLISH).endsWith(".jar"));
-                        if (insideFiles != null) {
-                            for (File insideFile : insideFiles) {
-                                if (file.getName().contains("spigot") || file.getName().contains("bukkit") || file.getName().contains("paper")) {
-                                    return insideFile;
-                                }
-                            }
-                        }
-                    }
-                }
+        for (String entry : classpathEntries) {
+            File file = new File(entry);
+            if (file.isFile() && file.getName().toLowerCase().endsWith(".jar")) {
+                loadedJars.add(file);
             }
         }
-        return null;
+
+        return loadedJars;
     }
 
     private void compileFile(File javaFile) {
         PluginConsumer.process(
             () -> {
-                File bukkitJar = findBukkitJar();
+                List<File> loadedJars = findAllLoadedJars();
 
+                // Setup the Java compiler with the entire classpath with all loaded jars
                 JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+                StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
+                Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(javaFile);
 
-                StandardJavaFileManager fileManager;
-
-                if (bukkitJar != null) {
-                    fileManager = compiler.getStandardFileManager(null, null, null);
-                    Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(javaFile);
-
-                    List<String> optionList = new ArrayList<>();
-                    optionList.add("-classpath");
-                    optionList.add(bukkitJar.getPath() + File.pathSeparator + System.getProperty("java.class.path"));
-
-                    JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, optionList, null, compilationUnits);
-                    boolean result = task.call();
-
-                    if (!result) {
-                        Implements.fetch(MeteorLogger.class).info("Can't create the compiled file :(");
-                    }
-                    fileManager.close();
-                } else {
-                    fileManager = compiler.getStandardFileManager(null, null, null);
-
-                    JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, null, null, null);
-
-                    boolean result = task.call();
-
-                    if (!result) {
-                        Implements.fetch(MeteorLogger.class).info("Can't create the compiled file :(");
-                    }
-                    fileManager.close();
+                List<String> optionList = new ArrayList<>();
+                StringBuilder classpathBuilder = new StringBuilder();
+                for (File jar : loadedJars) {
+                    classpathBuilder.append(jar.getAbsolutePath()).append(File.pathSeparator);
                 }
+                optionList.add("-classpath");
+                optionList.add(classpathBuilder.toString() + System.getProperty("java.class.path"));
+
+                JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, optionList, null, compilationUnits);
+                boolean result = task.call();
+
+                if (!result) {
+                    Implements.fetch(MeteorLogger.class).info("Can't create the compiled file :(");
+                }
+                fileManager.close();
             },
             e -> {}
         );
