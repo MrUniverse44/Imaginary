@@ -29,7 +29,7 @@ import java.util.zip.GZIPOutputStream;
  * Check out <a href="https://bStats.org/">...</a> to learn more about bStats!
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
-public class BukkitMetrics implements Module {
+public class BukkitMetricsService implements Module {
 
     static {
         // You can use the property to disable the check in your test environment
@@ -39,7 +39,7 @@ public class BukkitMetrics implements Module {
                     new byte[]{'o', 'r', 'g', '.', 'b', 's', 't', 'a', 't', 's', '.', 'b', 'u', 'k', 'k', 'i', 't'});
             final String examplePackage = new String(new byte[]{'y', 'o', 'u', 'r', '.', 'p', 'a', 'c', 'k', 'a', 'g', 'e'});
             // We want to make sure nobody just copy & pastes the example and use the wrong package names
-            if (BukkitMetrics.class.getPackage().getName().equals(defaultPackage) || BukkitMetrics.class.getPackage().getName().equals(examplePackage)) {
+            if (BukkitMetricsService.class.getPackage().getName().equals(defaultPackage) || BukkitMetricsService.class.getPackage().getName().equals(examplePackage)) {
                 throw new IllegalStateException("bStats Metrics class has not been relocated correctly!");
             }
         }
@@ -82,7 +82,7 @@ public class BukkitMetrics implements Module {
      * @param pluginId The id of the plugin.
      *                 It can be found at <a href="https://bstats.org/what-is-my-plugin-id">What is my plugin id?</a>
      */
-    public BukkitMetrics(Plugin plugin, int pluginId) {
+    public BukkitMetricsService(Plugin plugin, int pluginId) {
         if (plugin == null) {
             throw new IllegalArgumentException("Plugin cannot be null!");
         }
@@ -138,7 +138,7 @@ public class BukkitMetrics implements Module {
                 } catch (NoSuchFieldException ignored) { }
             }
             // Register our service
-            Bukkit.getServicesManager().register(BukkitMetrics.class, this, plugin, ServicePriority.Normal);
+            Bukkit.getServicesManager().register(BukkitMetricsService.class, this, plugin, ServicePriority.Normal);
             if (!found) {
                 // We are the first!
                 startSubmitting();

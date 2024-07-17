@@ -1,4 +1,4 @@
-package me.blueslime.imaginary.service.executor;
+package me.blueslime.imaginary.executables.executor;
 
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.logs.MeteorLogger;

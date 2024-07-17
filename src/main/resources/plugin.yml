@@ -1,4 +1,8 @@
-name: Imaginery
+name: Imaginary
 version: '${project.version}'
-main: me.blueslime.imaginery.Imaginery
-api-version: '1.16'
+main: me.blueslime.imaginary.Imaginary
+api-version: '1.13'
+description: The best project for events without creating an entire plugin only for a single event catcher.
+commands:
+  imaginary:
+    description: Main command of the plugin
