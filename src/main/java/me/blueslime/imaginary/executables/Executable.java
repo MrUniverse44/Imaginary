@@ -52,7 +52,6 @@ public class Executable {
         );
     }
 
-    @SuppressWarnings("unchecked")
     public void initialize() {
         MeteorLogger logs = Implements.fetch(MeteorLogger.class);
         long time = System.currentTimeMillis();
@@ -123,17 +122,13 @@ public class Executable {
             outputDir.mkdirs();
         }
 
-        // Iterate Events
-        for (Map.Entry<String, Object> entry : events.entrySet()) {
-            String eventId = entry.getKey();
-            Map<String, Object> eventDetails = (Map<String, Object>) entry.getValue();
-
-            List<String> imports = (List<String>) eventDetails.get("imports");
-            Map<String, List<String>> classModifiers = (Map<String, List<String>>) eventDetails.get("class-modifiers");
-            List<String> codeLines = classModifiers.get("code");
+        for (String key : eventSection.getKeys(false)) {
+            String path = "events." + key + ".";
+            List<String> imports = configuration.getStringList(path + "imports");
+            List<String> codeLines = configuration.getStringList(path + "class-modifiers.code");
 
             // Class name will be the same of this fileName
-            String className = this.identifier + "_" + eventId;
+            String className = this.identifier + "_" + key;
             StringBuilder codeBuilder = new StringBuilder();
 
             // We should add the imports to this current class
