@@ -23,6 +23,6 @@ events:
       code:
         - "    @EventHandler"
         - "    public void on(InventoryOpenEvent event) {"
-        - "        Player player = event.getPlayer();"
+        - "        Player player = (Player)event.getPlayer();"
         - "        player.sendMessage(\"Hola!\");"
         - "    }"
