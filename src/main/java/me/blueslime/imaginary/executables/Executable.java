@@ -232,6 +232,7 @@ public class Executable {
                     runningFileStorage.set(className, jarFile);
                     return ExecutorUtil.findClass(jarFile);
                 }
+                Implements.fetch(MeteorLogger.class).info("Can't load: " + className , "because file was not found in path: " + (jarFile != null ? jarFile.getAbsolutePath() : ""));
                 return null;
             },
             e -> Implements.fetch(MeteorLogger.class).error(e, "Failed to load class " + className),
@@ -288,6 +289,7 @@ public class Executable {
                 try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jarFile.toPath()))) {
                     File classFile = new File(outputDir, PACKAGE_NAME.replace('.', '/') + "/" + className + ".class");
                     if (!classFile.exists()) {
+                        Implements.fetch(MeteorLogger.class).error("Can't find class file at: " + classFile.getAbsolutePath());
                         return null;
                     }
                     JarEntry entry = new JarEntry(PACKAGE_NAME.replace('.', '/') + "/" + classFile.getName());
