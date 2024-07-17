@@ -7,6 +7,8 @@
 #   - me.blueslime.imaginary.api.events.ExecutableInitializeEvent
 #   - me.blueslime.imaginary.api.events.ExecutableShutdownEvent
 # This is a beta, please report issues.
+# Command creation will be in implemented in the future.
+# I'm still planning how this system will work.
 
 # Events are for listeners.
 events:
