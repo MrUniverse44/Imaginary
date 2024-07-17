@@ -54,6 +54,7 @@ public class Executable {
 
     @SuppressWarnings("unchecked")
     public void initialize() {
+        MeteorLogger logs = Implements.fetch(MeteorLogger.class);
         long time = System.currentTimeMillis();
         // Initialize FileConfiguration for this file.
         FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
@@ -64,6 +65,7 @@ public class Executable {
         ConfigurationSection menuSection = configuration.getConfigurationSection("menus");
         // Load menus
         if (menuSection != null) {
+            logs.info("Loading events from " + file.getName());
             // Instance
             Menus menus = Implements.fetch(Menus.class);
             // Menus section exists so we need to load all instances
@@ -84,6 +86,7 @@ public class Executable {
         ConfigurationSection inventorySection = configuration.getConfigurationSection("inventories");
         // Load Inventories
         if (inventorySection != null) {
+            logs.info("Loading inventories from " + file.getName());
             // Instance
             Inventories inventories = Implements.fetch(Inventories.class);
             // Inventory section exists, so we need to load all instances
@@ -106,13 +109,12 @@ public class Executable {
 
         // Check to prevent null exceptions.
         if (eventSection == null) {
+            logs.info("No events found for " + file.getName());
             return;
         }
 
         // We need to get values from events
         Map<String, Object> events = eventSection.getValues(false);
-
-        MeteorLogger logs = Implements.fetch(MeteorLogger.class);
 
         // We save here the generated classes
         File outputMainDir = new File(plugin.getDataFolder(), "generated");

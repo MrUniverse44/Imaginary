@@ -19,7 +19,9 @@ public class ContentService implements RegisteredModule {
 
     @Override
     public void initialize() {
+        MeteorLogger logs = Implements.fetch(MeteorLogger.class);
         File file = Implements.fetch(File.class, "executables");
+        logs.info("Loading executables..");
 
         if (!file.exists()) {
             if (file.mkdirs()) {
@@ -50,15 +52,16 @@ public class ContentService implements RegisteredModule {
             String name = executable.getName()
                     .replace(".yml", "")
                     .toLowerCase(Locale.ENGLISH);
+            logs.info("Loading executable: " + name);
 
-            Executable instance = executables.put(
+            Executable instance = executables.computeIfAbsent(
                 name,
-                new Executable(executable)
+                k -> new Executable(executable)
             );
 
-            if (instance != null) {
-                instance.initialize();
-            }
+
+            logs.info("Initialized executable: " + name);
+            instance.initialize();
         }
     }
 
