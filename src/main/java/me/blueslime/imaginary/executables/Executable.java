@@ -17,12 +17,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
-import java.io.File;
-import java.io.FileWriter;
+import javax.tools.*;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -195,6 +191,7 @@ public class Executable {
                 List<File> loadedJars = findAllLoadedJars();
 
                 // Set up the Java compiler with the entire classpath with all loaded jars
+
                 JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
                 StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
                 Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(javaFile);
@@ -210,13 +207,18 @@ public class Executable {
                 // With this if a developer add an optional plugin support, it will not pause the compiler
                 // If that plugin is not installed.
                 optionList.add("-Xdiags:verbose");
+                optionList.add("-Xlint:none");
 
-                JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, optionList, null, compilationUnits);
-                boolean result = task.call();
+                DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+                StringWriter writer = new StringWriter();
+                PrintWriter printWriter = new PrintWriter(writer);
+                JavaCompiler.CompilationTask task = compiler.getTask(printWriter, fileManager, diagnostics, optionList, null, compilationUnits);
 
-                if (!result) {
-                    Implements.fetch(MeteorLogger.class).info("Can't create the compiled file :(");
+                if (task.call()) {
+                    Implements.fetch(MeteorLogger.class).info(": D");
                 }
+
+                printWriter.flush();
                 fileManager.close();
             },
             e -> {}
