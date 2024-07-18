@@ -63,12 +63,15 @@ public class Executable {
             // Menus section exists so we need to load all instances
             for (String menuIdentifier : menuSection.getKeys(false)) {
                 ConfigurationSection menuData = menuSection.getConfigurationSection(menuIdentifier);
-
+                // Check if the inventory exists
                 if (menuData != null) {
+                    // Debug
+                    logs.debug("Loading menu " + menuIdentifier + " from " + file.getName());
                     // We save the menu to the storage settings, and with this the menu was already finished.
                     menus.getMenuStorageSettings().set(
                         identifier + ":" + menuIdentifier, menuData
                     );
+                    logs.debug("Loaded menu " + menuIdentifier + " from " + file.getName() + ", identifier: " + identifier + ":" + menuIdentifier);
                 }
             }
         }
@@ -84,14 +87,16 @@ public class Executable {
             // Inventory section exists, so we need to load all instances
             for (String inventoryIdentifier : inventorySection.getKeys(false)) {
                 ConfigurationSection inventoryData = inventorySection.getConfigurationSection(inventoryIdentifier);
-
-
+                // Check
                 if (inventoryData != null) {
+                    // Debug
+                    logs.debug("Loading inventory " + inventoryIdentifier + " from " + file.getName());
                     // An inventory with a new identifier exists, so we need to save it in the storage.
                     inventories.getInventoryStorage().set(
                         identifier + ":" + inventoryIdentifier,
                         new DefaultInventory(plugin, inventoryData, file)
                     );
+                    logs.debug("Loaded inventory " + inventoryIdentifier + " from " + file.getName() + ", identifier: " + identifier + ":" + inventoryIdentifier);
                 }
             }
         }
