@@ -57,6 +57,7 @@ public class Executable {
         ConfigurationSection menuSection = configuration.getConfigurationSection("menus");
         // Load menus
         if (menuSection != null) {
+            long time = System.currentTimeMillis();
             logs.info("Loading events from " + file.getName());
             // Instance
             Menus menus = Implements.fetch(Menus.class);
@@ -74,6 +75,7 @@ public class Executable {
                     logs.debug("Loaded menu " + menuIdentifier + " from " + file.getName() + ", identifier: " + identifier + ":" + menuIdentifier);
                 }
             }
+            logs.debug("Menus loaded in " + (System.currentTimeMillis() - time) + "ms for " + identifier);
         }
 
 
@@ -81,6 +83,7 @@ public class Executable {
         ConfigurationSection inventorySection = configuration.getConfigurationSection("inventories");
         // Load Inventories
         if (inventorySection != null) {
+            long time = System.currentTimeMillis();
             logs.info("Loading inventories from " + file.getName());
             // Instance
             Inventories inventories = Implements.fetch(Inventories.class);
@@ -92,13 +95,14 @@ public class Executable {
                     // Debug
                     logs.debug("Loading inventory " + inventoryIdentifier + " from " + file.getName());
                     // An inventory with a new identifier exists, so we need to save it in the storage.
-                    inventories.getInventoryStorage().set(
+                    inventories.getInventoryStorage().add(
                         identifier + ":" + inventoryIdentifier,
-                        new DefaultInventory(plugin, inventoryData, file)
+                        (k) -> new DefaultInventory(plugin, inventoryData, file)
                     );
                     logs.debug("Loaded inventory " + inventoryIdentifier + " from " + file.getName() + ", identifier: " + identifier + ":" + inventoryIdentifier);
                 }
             }
+            logs.debug("Inventories loaded in " + (System.currentTimeMillis() - time) + "ms for " + identifier);
         }
 
         // Initialize event system.
@@ -117,7 +121,7 @@ public class Executable {
             outputDir.mkdirs();
         }
 
-        long time = System.currentTimeMillis();
+        logs.debug("Compiling Jar(s) for " + identifier + " events...");
         for (String key : eventSection.getKeys(false)) {
             String path = "events." + key + ".";
             List<String> imports = configuration.getStringList(path + "imports");
@@ -157,8 +161,8 @@ public class Executable {
             if (result) {
                 // We show the result in console
                 logs.info(
-                        "Generated class result from event of executable: " + identifier,
-                        "class name: " + className + ", result:\n\n" + classCode
+                    "Generated class result from event of executable: " + identifier,
+                    "class name: " + className + ", result:\n\n" + classCode
                 );
             }
 
@@ -174,7 +178,7 @@ public class Executable {
                 e -> logs.error(e, "Failed to load executable: " + className)
             );
         }
-        logs.info("Executable with identifier: " + identifier + ", was loaded in " + (System.currentTimeMillis() - time) + "ms");
+        logs.info("Executable with identifier: " + identifier + " was loaded.");
     }
 
     private List<File> findAllLoadedJars() {
